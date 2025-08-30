@@ -1,0 +1,67 @@
+#define BTN_GRAB_PIN 7    // кнопка для серво 6 (захват)
+#define BTN_STEP_PIN 8    // кнопка для серво 1 (шаг 30°)
+
+int grabState = 0;       // 0 или 180 для серво 6
+bool grabLastButtonState = HIGH;
+
+int stepServoAngle = 0;  // угол серво 1
+bool stepDirectionUp = true;
+
+void setup() {
+  pinMode(BTN_GRAB_PIN, INPUT_PULLUP);
+  pinMode(BTN_STEP_PIN, INPUT_PULLUP);
+  Serial.begin(9600);
+}
+
+void loop() {
+  // Считываем джойстик с A4 и A5
+  int xAxis = analogRead(A4);
+  int yAxis = analogRead(A5);
+
+  // Считываем потенциометры с A0..A3 (для серво 2..5)
+  int pot2 = analogRead(A0);
+  int pot3 = analogRead(A1);
+  int pot4 = analogRead(A2);
+  int pot5 = analogRead(A3);
+
+  // Обработка кнопки захвата (серво 6)
+  bool grabButtonState = digitalRead(BTN_GRAB_PIN);
+  if (grabLastButtonState == HIGH && grabButtonState == LOW) {
+    grabState = (grabState == 0) ? 180 : 0;
+  }
+  grabLastButtonState = grabButtonState;
+
+  // Обработка кнопки шагового серво 1 (шаг 30 градусов)
+  if (digitalRead(BTN_STEP_PIN) == LOW) {
+    delay(50);
+    if (digitalRead(BTN_STEP_PIN) == LOW) {
+      if (stepDirectionUp) {
+        stepServoAngle += 30;
+        if (stepServoAngle >= 180) {
+          stepServoAngle = 180;
+          stepDirectionUp = false;
+        }
+      } else {
+        stepServoAngle -= 30;
+        if (stepServoAngle <= 0) {
+          stepServoAngle = 0;
+          stepDirectionUp = true;
+        }
+      }
+      // Ждем отпускания кнопки
+      while (digitalRead(BTN_STEP_PIN) == LOW) delay(10);
+    }
+  }
+
+  // Отправляем по Serial в сжатом виде (0-255)
+  Serial.write(xAxis / 4);
+  Serial.write(yAxis / 4);
+  Serial.write(grabState / 2);      // 0 или 90 (180/2)
+  Serial.write(stepServoAngle / 2); // 0..90
+  Serial.write(pot2 / 4);
+  Serial.write(pot3 / 4);
+  Serial.write(pot4 / 4);
+  Serial.write(pot5 / 4);
+
+  delay(20);
+}
