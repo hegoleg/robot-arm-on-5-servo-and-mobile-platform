@@ -1,0 +1,47 @@
+#include <Servo.h>
+
+Servo servo1;  // шаговый серво (пин 3)
+Servo servo2;  // потенциометр 1 (пин 4)
+Servo servo3;  // потенциометр 2 (пин 5)
+Servo servo4;  // потенциометр 3 (пин 6)
+Servo servo5;  // потенциометр 4 (пин 7)
+Servo servo6;  // захват (пин 8)
+
+int grabState = 0;
+int stepServoAngle = 0;
+
+void setup() {
+  servo1.attach(3);
+  servo2.attach(4);
+  servo3.attach(5);
+  servo4.attach(6);
+  servo5.attach(7);
+  servo6.attach(8);
+
+  Serial.begin(9600);
+}
+
+void loop() {
+  if (Serial.available() >= 8) {
+    int xAxis = Serial.read();
+    int yAxis = Serial.read();
+    grabState = Serial.read();
+    stepServoAngle = Serial.read() * 2; // восстанавливаем угол (0-180)
+
+    int pot2 = Serial.read() * 4;
+    int pot3 = Serial.read() * 4;
+    int pot4 = Serial.read() * 4;
+    int pot5 = Serial.read() * 4;
+
+    // Управляем сервами
+    servo1.write(stepServoAngle);
+    servo2.write(map(pot2, 0, 1023, 0, 180));
+    servo3.write(map(pot3, 0, 1023, 0, 180));
+    servo4.write(map(pot4, 0, 1023, 0, 180));
+    servo5.write(map(pot5, 0, 1023, 0, 180));
+
+    // Захват 0 или 180
+    if (grabState == 1) servo6.write(180);
+    else servo6.write(0);
+  }
+}
